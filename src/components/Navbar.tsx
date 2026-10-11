@@ -292,20 +292,16 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </button>
 
-          {/* Cart Button (Glass Tile) */}
+          {/* Cart Button (Glass Tile - transparent neutral with counter badge) */}
           <button
             onClick={onOpenCart}
-            className={`relative p-2.5 rounded-xl transition-all duration-200 cursor-pointer backdrop-blur-xs flex items-center justify-center shrink-0 focus:outline-hidden ${
-              cartCount > 0
-                ? 'text-amber-300 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 shadow-[0_0_12px_rgba(251,191,36,0.25)]'
-                : 'text-slate-100 hover:text-white bg-white/[0.09] hover:bg-white/[0.18] border border-white/20 hover:border-white/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.25),0_2px_8px_rgba(0,0,0,0.3)]'
-            }`}
+            className="relative p-2.5 text-slate-100 hover:text-white bg-white/[0.09] hover:bg-white/[0.18] border border-white/20 hover:border-white/40 rounded-xl transition-all duration-200 cursor-pointer shadow-[inset_0_1px_1px_rgba(255,255,255,0.25),0_2px_8px_rgba(0,0,0,0.3)] backdrop-blur-xs flex items-center justify-center shrink-0 focus:outline-hidden"
             aria-label="Shopping Cart"
             title={lang === 'ar' ? 'سلة المشتريات' : 'Shopping Cart'}
           >
-            <ShoppingBag className="w-4 h-4" />
+            <ShoppingBag className="w-4 h-4 text-slate-100" />
             {cartCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 bg-amber-400 text-black font-black text-[11px] rounded-full flex items-center justify-center shadow-md animate-scale-in">
+              <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-4.5 px-1 bg-amber-500 text-black font-black text-[10px] rounded-full flex items-center justify-center shadow-md animate-scale-in">
                 {cartCount}
               </span>
             )}
@@ -314,14 +310,14 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       </div>
 
-      {/* Mobile Category Bar (Glass pills directly on background) */}
-      <div className="md:hidden bg-transparent px-3 py-2.5 overflow-x-auto flex items-center gap-2 text-xs scrollbar-none">
+      {/* Mobile Category Bar (Glass pills directly on background - fully visible without scrollbar) */}
+      <div className="md:hidden bg-transparent px-2.5 py-2 flex flex-wrap items-center justify-center gap-1.5 text-xs">
         <button
           onClick={() => {
             if (isAdminOpen) onToggleAdmin();
             onSelectCategory('all');
           }}
-          className={`px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 transition-all ${
+          className={`px-2.5 py-1 rounded-lg whitespace-nowrap transition-all ${
             activeCategory === 'all' && !isAdminOpen
               ? 'bg-amber-500/15 text-white font-bold border border-amber-500/35 shadow-xs backdrop-blur-xs'
               : 'bg-white/[0.08] text-slate-200 hover:text-white hover:bg-white/[0.15] border border-white/15'

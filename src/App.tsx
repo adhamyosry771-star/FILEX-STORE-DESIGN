@@ -136,6 +136,10 @@ export default function App() {
     } else {
       document.body.style.backgroundColor = '#07090e';
       document.body.style.backgroundImage = `linear-gradient(to bottom, rgba(7, 9, 14, 0.45), rgba(7, 9, 14, 0.58), rgba(7, 9, 14, 0.70)), url('${bg}')`;
+      document.body.style.backgroundSize = 'cover';
+      document.body.style.backgroundPosition = 'center top';
+      document.body.style.backgroundAttachment = 'fixed';
+      document.body.style.backgroundRepeat = 'no-repeat';
     }
   }, [branding.backgroundImageUrl]);
 
@@ -659,7 +663,7 @@ export default function App() {
           <div
             className="w-full h-full bg-cover bg-center bg-fixed bg-no-repeat"
             style={{
-              backgroundImage: `url('${siteBg}')`,
+              backgroundImage: `linear-gradient(to bottom, rgba(7, 9, 14, 0.45), rgba(7, 9, 14, 0.58), rgba(7, 9, 14, 0.70)), url('${siteBg}')`,
             }}
           />
         )}
@@ -790,8 +794,8 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Category Filter Tabs */}
-                <div className="flex items-center gap-2 p-1.5 bg-[#0a152d]/85 rounded-2xl border border-blue-900/40 overflow-x-auto scrollbar-none shadow-md shadow-blue-950/20">
+                {/* Category Filter Tabs - Fully visible without horizontal scrollbar */}
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 sm:gap-2 p-2 bg-[#0a152d]/85 rounded-2xl border border-blue-900/40 shadow-md shadow-blue-950/20 w-full">
                   {(['all', 'avatar_frames', 'entrance_effects', 'gifts', 'medals', 'mic_frames', 'chat_bubbles', 'room_themes'] as ProductCategory[]).map(
                     (cat) => {
                       const count = cat === 'all' ? products.length : products.filter((p) => p.category === cat).length;
@@ -800,7 +804,7 @@ export default function App() {
                         <button
                           key={cat}
                           onClick={() => handleCategoryChange(cat)}
-                          className={`px-3.5 py-2 text-xs font-semibold rounded-xl transition-all whitespace-nowrap shrink-0 flex items-center gap-2 cursor-pointer ${
+                          className={`px-3 py-1.5 text-xs font-semibold rounded-xl transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
                             isActive
                               ? 'bg-amber-500/15 text-white font-bold border border-amber-500/40 shadow-xs'
                               : 'text-slate-300 hover:text-white hover:bg-white/[0.08] border border-transparent'

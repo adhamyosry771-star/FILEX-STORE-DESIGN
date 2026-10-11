@@ -77,7 +77,7 @@ export const ImageBannerSlider: React.FC<ImageBannerSliderProps> = ({
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-2">
       {/* Rectangular Banner Frame */}
       <div
-        className="relative w-full h-[230px] sm:h-[290px] md:h-[340px] rounded-2xl sm:rounded-3xl overflow-hidden bg-black/60 shadow-2xl shadow-black/80 select-none no-download-shield"
+        className="relative w-full h-[230px] sm:h-[290px] md:h-[340px] rounded-2xl sm:rounded-3xl overflow-hidden bg-black/40 border border-white/10 shadow-lg shadow-black/30 select-none no-download-shield"
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
         onContextMenu={(e) => {
