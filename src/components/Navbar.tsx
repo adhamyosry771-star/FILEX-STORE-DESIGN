@@ -105,8 +105,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
         </div>
 
-        {/* Zone 2: clean text navigation links */}
-        <nav className="hidden md:flex items-center gap-2 lg:gap-3.5 xl:gap-5 text-xs lg:text-sm font-medium text-slate-300 shrink-0">
+        {/* Zone 2: clean text navigation links (visible on xl and wide screens to ensure all action buttons fit without clipping) */}
+        <nav className="hidden xl:flex items-center gap-2 xl:gap-3.5 2xl:gap-5 text-xs xl:text-sm font-medium text-slate-300 shrink-0">
           <button
             onClick={() => {
               if (isAdminOpen) onToggleAdmin();
@@ -295,13 +295,17 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Cart Button (Glass Tile) */}
           <button
             onClick={onOpenCart}
-            className="relative p-2.5 text-slate-100 hover:text-white bg-white/[0.09] hover:bg-white/[0.18] border border-white/20 hover:border-white/40 rounded-xl transition-all duration-200 cursor-pointer shadow-[inset_0_1px_1px_rgba(255,255,255,0.25),0_2px_8px_rgba(0,0,0,0.3)] backdrop-blur-xs flex items-center justify-center shrink-0 focus:outline-hidden"
+            className={`relative p-2.5 rounded-xl transition-all duration-200 cursor-pointer backdrop-blur-xs flex items-center justify-center shrink-0 focus:outline-hidden ${
+              cartCount > 0
+                ? 'text-amber-300 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 shadow-[0_0_12px_rgba(251,191,36,0.25)]'
+                : 'text-slate-100 hover:text-white bg-white/[0.09] hover:bg-white/[0.18] border border-white/20 hover:border-white/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.25),0_2px_8px_rgba(0,0,0,0.3)]'
+            }`}
             aria-label="Shopping Cart"
             title={lang === 'ar' ? 'سلة المشتريات' : 'Shopping Cart'}
           >
             <ShoppingBag className="w-4 h-4" />
             {cartCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-amber-500 text-black font-black text-[11px] rounded-full flex items-center justify-center shadow-md">
+              <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 bg-amber-400 text-black font-black text-[11px] rounded-full flex items-center justify-center shadow-md animate-scale-in">
                 {cartCount}
               </span>
             )}

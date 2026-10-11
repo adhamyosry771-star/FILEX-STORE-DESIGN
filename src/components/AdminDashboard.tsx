@@ -541,7 +541,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     try {
       await unbanUser(u.id, u.email);
       const updated = await getAllRegisteredUsers();
-      setRegisteredUsers(updated);
+      setRegisteredUsers(
+        updated.map((usr) =>
+          usr.id === u.id || usr.email.toLowerCase() === u.email.toLowerCase()
+            ? {
+                ...usr,
+                isBanned: false,
+                bannedUntil: undefined,
+                banDurationType: undefined,
+                banReason: undefined,
+                bannedAt: undefined
+              }
+            : usr
+        )
+      );
     } catch (e: any) {
       console.warn('Unban error:', e);
     }

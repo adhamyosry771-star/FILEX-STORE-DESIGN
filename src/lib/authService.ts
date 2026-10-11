@@ -600,13 +600,25 @@ export async function banUser(
     bannedAt: new Date().toISOString()
   };
 
+  const lowerEmail = email.toLowerCase();
+
+  // Clear from unbanned set if re-banned
+  try {
+    const rawUnbanned = localStorage.getItem('filex_unbanned_emails_v1');
+    if (rawUnbanned) {
+      const unbannedSet = JSON.parse(rawUnbanned);
+      delete unbannedSet[lowerEmail];
+      localStorage.setItem('filex_unbanned_emails_v1', JSON.stringify(unbannedSet));
+    }
+  } catch {}
+
   // 1. Update in local storage
   try {
     const localUsers = getLocalUsers();
-    localUsers[email.toLowerCase()] = {
-      ...(localUsers[email.toLowerCase()] || {
+    localUsers[lowerEmail] = {
+      ...(localUsers[lowerEmail] || {
         id: userId,
-        email: email.toLowerCase(),
+        email: lowerEmail,
         displayName: email.split('@')[0],
         role: 'user',
         createdAt: new Date().toISOString()
@@ -618,18 +630,28 @@ export async function banUser(
     // Save to dedicated instant banned map for 0ms lookup
     const rawBanned = localStorage.getItem('filex_banned_emails_v1');
     const bannedMap = rawBanned ? JSON.parse(rawBanned) : {};
-    bannedMap[email.toLowerCase()] = {
+    bannedMap[lowerEmail] = {
       ...banData,
-      email: email.toLowerCase(),
+      email: lowerEmail,
       userId
     };
     localStorage.setItem('filex_banned_emails_v1', JSON.stringify(bannedMap));
   } catch {}
 
-  // 2. Update Firestore
+  // 2. Update Firestore across all documents matching this userId or email
   try {
     if (userId) {
-      await setDoc(doc(db, 'users', userId), banData, { merge: true });
+      await setDoc(doc(db, 'users', userId), banData, { merge: true }).catch(() => {});
+    }
+    const { collection, getDocs } = await import('firebase/firestore');
+    const snap = await getDocs(collection(db, 'users'));
+    for (const d of snap.docs) {
+      const data = d.data();
+      const docEmail = data.email?.toLowerCase();
+      const docId = data.id || d.id;
+      if (docEmail === lowerEmail || docId === userId || d.id === userId) {
+        await setDoc(doc(db, 'users', d.id), banData, { merge: true }).catch(() => {});
+      }
     }
   } catch (e) {
     console.warn('Firestore banUser write:', e);
@@ -639,12 +661,12 @@ export async function banUser(
   try {
     const payload = JSON.stringify({
       userId,
-      email: email.toLowerCase(),
+      email: lowerEmail,
       banData,
       timestamp: Date.now()
     });
     localStorage.setItem('filex_active_ban_event', payload);
-    window.dispatchEvent(new CustomEvent('filex_user_banned', { detail: { userId, email: email.toLowerCase(), banData } }));
+    window.dispatchEvent(new CustomEvent('filex_user_banned', { detail: { userId, email: lowerEmail, banData } }));
   } catch {}
 
   logStoreActivity('admin_banned_user', { userId, email, durationType, bannedUntil });
@@ -655,50 +677,82 @@ export async function banUser(
  * Unban user
  */
 export async function unbanUser(userId: string, email: string): Promise<void> {
-  // 1. Update local storage
+  const lowerEmail = email.toLowerCase();
+
+  // Register in unbanned cache to prevent stale reads
+  try {
+    const rawUnbanned = localStorage.getItem('filex_unbanned_emails_v1');
+    const unbannedSet = rawUnbanned ? JSON.parse(rawUnbanned) : {};
+    unbannedSet[lowerEmail] = Date.now();
+    localStorage.setItem('filex_unbanned_emails_v1', JSON.stringify(unbannedSet));
+  } catch {}
+
+  // 1. Update local storage users and banned map
   try {
     const localUsers = getLocalUsers();
-    if (localUsers[email.toLowerCase()]) {
-      const u = localUsers[email.toLowerCase()];
-      u.isBanned = false;
-      delete u.bannedUntil;
-      delete u.banDurationType;
-      delete u.banReason;
-      delete u.bannedAt;
-      saveLocalUsers(localUsers);
-    }
+    Object.keys(localUsers).forEach((k) => {
+      const u = localUsers[k];
+      if (k.toLowerCase() === lowerEmail || u.email?.toLowerCase() === lowerEmail || (userId && u.id === userId)) {
+        u.isBanned = false;
+        delete u.bannedUntil;
+        delete u.banDurationType;
+        delete u.banReason;
+        delete u.bannedAt;
+      }
+    });
+    saveLocalUsers(localUsers);
+
     // Remove from instant banned map
     const rawBanned = localStorage.getItem('filex_banned_emails_v1');
     if (rawBanned) {
       const bannedMap = JSON.parse(rawBanned);
-      delete bannedMap[email.toLowerCase()];
+      delete bannedMap[lowerEmail];
+      Object.keys(bannedMap).forEach((k) => {
+        if (k.toLowerCase() === lowerEmail || (userId && bannedMap[k]?.userId === userId)) {
+          delete bannedMap[k];
+        }
+      });
       localStorage.setItem('filex_banned_emails_v1', JSON.stringify(bannedMap));
     }
   } catch {}
 
-  // 2. Update Firestore
+  // 2. Update Firestore across ALL documents matching this email or userId
   try {
+    const unbanPayload = {
+      isBanned: false,
+      bannedUntil: null,
+      banDurationType: null,
+      banReason: null,
+      bannedAt: null
+    };
+
     if (userId) {
-      await setDoc(doc(db, 'users', userId), {
-        isBanned: false,
-        bannedUntil: null,
-        banDurationType: null,
-        banReason: null
-      }, { merge: true });
+      await setDoc(doc(db, 'users', userId), unbanPayload, { merge: true }).catch(() => {});
+    }
+
+    const { collection, getDocs } = await import('firebase/firestore');
+    const snap = await getDocs(collection(db, 'users'));
+    for (const d of snap.docs) {
+      const data = d.data();
+      const docEmail = data.email?.toLowerCase();
+      const docId = data.id || d.id;
+      if (docEmail === lowerEmail || docId === userId || d.id === userId) {
+        await setDoc(doc(db, 'users', d.id), unbanPayload, { merge: true }).catch(() => {});
+      }
     }
   } catch (e) {
     console.warn('Firestore unbanUser write:', e);
   }
 
-  // 3. Dispatch unban trigger
+  // 3. Dispatch unban trigger to allow user back in
   try {
     const payload = JSON.stringify({
       userId,
-      email: email.toLowerCase(),
+      email: lowerEmail,
       timestamp: Date.now()
     });
     localStorage.setItem('filex_active_unban_event', payload);
-    window.dispatchEvent(new CustomEvent('filex_user_unbanned', { detail: { userId, email: email.toLowerCase() } }));
+    window.dispatchEvent(new CustomEvent('filex_user_unbanned', { detail: { userId, email: lowerEmail } }));
   } catch {}
 
   logStoreActivity('admin_unbanned_user', { userId, email });
@@ -781,6 +835,25 @@ export async function getAllRegisteredUsers(): Promise<AuthUser[]> {
         const firestoreCreated = data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : (data.createdAt || new Date().toISOString());
         const firestoreLastSeen = data.lastSeen?.toDate ? data.lastSeen.toDate().toISOString() : (data.lastSeen || usersMap[lowerEmail]?.lastSeen || firestoreCreated);
 
+        // Check if user was explicitly unbanned
+        let isExplicitlyUnbanned = false;
+        try {
+          const rawUnbanned = localStorage.getItem('filex_unbanned_emails_v1');
+          if (rawUnbanned) {
+            const unbannedSet = JSON.parse(rawUnbanned);
+            isExplicitlyUnbanned = Boolean(unbannedSet[lowerEmail]);
+          }
+        } catch {}
+
+        let resolvedIsBanned: boolean;
+        if (isExplicitlyUnbanned || data.isBanned === false) {
+          resolvedIsBanned = false;
+        } else if (data.isBanned === true) {
+          resolvedIsBanned = true;
+        } else {
+          resolvedIsBanned = !!usersMap[lowerEmail]?.isBanned;
+        }
+
         usersMap[lowerEmail] = {
           id: data.id || usersMap[lowerEmail]?.id || d.id,
           email: data.email,
@@ -789,11 +862,11 @@ export async function getAllRegisteredUsers(): Promise<AuthUser[]> {
           plainPassword: data.password || usersMap[lowerEmail]?.plainPassword,
           createdAt: firestoreCreated,
           lastSeen: firestoreLastSeen,
-          isBanned: data.isBanned !== undefined ? data.isBanned : !!usersMap[lowerEmail]?.isBanned,
-          banDurationType: data.banDurationType || usersMap[lowerEmail]?.banDurationType,
-          bannedUntil: data.bannedUntil !== undefined ? data.bannedUntil : usersMap[lowerEmail]?.bannedUntil,
-          banReason: data.banReason || usersMap[lowerEmail]?.banReason,
-          bannedAt: data.bannedAt || usersMap[lowerEmail]?.bannedAt,
+          isBanned: resolvedIsBanned,
+          banDurationType: resolvedIsBanned ? (data.banDurationType || usersMap[lowerEmail]?.banDurationType) : undefined,
+          bannedUntil: resolvedIsBanned ? (data.bannedUntil !== undefined ? data.bannedUntil : usersMap[lowerEmail]?.bannedUntil) : undefined,
+          banReason: resolvedIsBanned ? (data.banReason || usersMap[lowerEmail]?.banReason) : undefined,
+          bannedAt: resolvedIsBanned ? (data.bannedAt || usersMap[lowerEmail]?.bannedAt) : undefined,
           isModerator: data.isModerator !== undefined ? data.isModerator : (usersMap[lowerEmail]?.isModerator || data.role === 'moderator'),
           moderatorPermissions: data.moderatorPermissions || usersMap[lowerEmail]?.moderatorPermissions || [],
           isModeratorRevoked: data.isModeratorRevoked !== undefined ? data.isModeratorRevoked : !!usersMap[lowerEmail]?.isModeratorRevoked
@@ -856,16 +929,21 @@ export async function getAllRegisteredUsers(): Promise<AuthUser[]> {
     const rawBanned = localStorage.getItem('filex_banned_emails_v1');
     const bannedMap = rawBanned ? JSON.parse(rawBanned) : {};
     Object.values(usersMap).forEach((u) => {
-      if (u.isBanned && u.email) {
-        bannedMap[u.email.toLowerCase()] = {
-          isBanned: true,
-          banDurationType: u.banDurationType,
-          bannedUntil: u.bannedUntil,
-          banReason: u.banReason,
-          bannedAt: u.bannedAt,
-          userId: u.id,
-          email: u.email.toLowerCase()
-        };
+      if (u.email) {
+        const eml = u.email.toLowerCase();
+        if (u.isBanned) {
+          bannedMap[eml] = {
+            isBanned: true,
+            banDurationType: u.banDurationType,
+            bannedUntil: u.bannedUntil,
+            banReason: u.banReason,
+            bannedAt: u.bannedAt,
+            userId: u.id,
+            email: eml
+          };
+        } else {
+          delete bannedMap[eml];
+        }
       }
     });
     localStorage.setItem('filex_banned_emails_v1', JSON.stringify(bannedMap));
