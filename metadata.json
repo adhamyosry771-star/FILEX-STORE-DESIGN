@@ -1,0 +1,6 @@
+{
+  "name": "VipSVGA - متجر تصاميم وإطارات الغرف الصوتية",
+  "description": "المتجر الصيني الأول لبيع إطارات الغرف الصوتية، دخوليات VIP الفاخرة، ومؤثرات SVGA مع لوحة تحكم متطورة ومعاينة حية للأفاتار والغرفة.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
