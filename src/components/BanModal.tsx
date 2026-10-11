@@ -41,9 +41,9 @@ export const BanModal: React.FC<BanModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/55 backdrop-blur-xs flex items-center justify-center p-3.5 animate-backdrop-fade">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#050b18]/45 backdrop-blur-sm flex items-center justify-center p-3.5 animate-backdrop-fade">
       {/* Balanced Medium Transparency Window - Clean & Elegant Glassmorphism with smooth pop entrance */}
-      <div className="relative w-full max-w-[320px] sm:max-w-[340px] bg-[#091326]/75 backdrop-blur-md border border-white/10 rounded-2xl p-4 sm:p-4.5 shadow-2xl text-center space-y-3 animate-modal-pop">
+      <div className="relative w-full max-w-[320px] sm:max-w-[340px] bg-[#091326]/85 backdrop-blur-md border border-white/10 rounded-2xl p-4 sm:p-4.5 shadow-2xl text-center space-y-3 animate-modal-pop">
         
         {/* Shield Icon - Red Color */}
         <div className="relative mx-auto w-10 h-10 rounded-xl bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-500 shadow-xs">

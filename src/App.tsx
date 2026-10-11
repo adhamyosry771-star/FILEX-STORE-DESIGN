@@ -265,7 +265,7 @@ export default function App() {
   const [isSnowing, setIsSnowing] = useState(false);
   const [lang, setLang] = useState<'ar' | 'en'>('ar');
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<'featured' | 'price_asc' | 'price_desc' | 'vip'>('featured');
+  const [sortBy, setSortBy] = useState<'newest' | 'featured' | 'price_asc' | 'price_desc' | 'vip'>('newest');
   const [lastAddedId, setLastAddedId] = useState<string | null>(null);
   const [bannedModalInfo, setBannedModalInfo] = useState<BanStatus | null>(null);
 
@@ -596,6 +596,12 @@ export default function App() {
   });
 
   const sortedProducts = [...filteredProducts].sort((a, b) => {
+    if (sortBy === 'newest') {
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      if (dateB !== dateA) return dateB - dateA;
+      return (b.id || '').localeCompare(a.id || '');
+    }
     if (sortBy === 'price_asc') return a.price - b.price;
     if (sortBy === 'price_desc') return b.price - a.price;
     if (sortBy === 'vip') return b.vipLevel - a.vipLevel;
@@ -784,18 +790,22 @@ export default function App() {
                     {/* Sort Selector */}
                     <select
                       value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-                      className="bg-[#0c1833]/90 border border-blue-900/50 rounded-xl py-2 px-3 text-xs text-slate-200 focus:outline-none focus:border-amber-400 cursor-pointer shadow-xs"
+                      onChange={(e) => {
+                        setSortBy(e.target.value as typeof sortBy);
+                        e.currentTarget.blur();
+                      }}
+                      className="bg-[#0c1833]/90 border border-blue-900/50 rounded-xl py-2 px-3 text-xs text-slate-200 focus:outline-none focus:ring-0 focus:border-blue-900/50 active:outline-none cursor-pointer shadow-xs"
                     >
-                      <option value="featured">{lang === 'ar' ? 'الأكثر طلباً' : 'Popularity'}</option>
-                      <option value="price_asc">{lang === 'ar' ? 'السعر: الأقل أولاً' : 'Price: Low to High'}</option>
-                      <option value="price_desc">{lang === 'ar' ? 'السعر: الأعلى أولاً' : 'Price: High to Low'}</option>
+                      <option value="newest" className="bg-[#0c1833] text-slate-200">{lang === 'ar' ? 'الأحدث' : 'Newest'}</option>
+                      <option value="featured" className="bg-[#0c1833] text-slate-200">{lang === 'ar' ? 'الأكثر طلباً' : 'Popularity'}</option>
+                      <option value="price_asc" className="bg-[#0c1833] text-slate-200">{lang === 'ar' ? 'السعر: الأقل أولاً' : 'Price: Low to High'}</option>
+                      <option value="price_desc" className="bg-[#0c1833] text-slate-200">{lang === 'ar' ? 'السعر: الأعلى أولاً' : 'Price: High to Low'}</option>
                     </select>
                   </div>
                 </div>
 
-                {/* Category Filter Tabs - Fully visible without horizontal scrollbar */}
-                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 sm:gap-2 p-2 bg-[#0a152d]/85 rounded-2xl border border-blue-900/40 shadow-md shadow-blue-950/20 w-full">
+                {/* Category Filter Tabs */}
+                <div className="flex items-center gap-2 p-1.5 bg-[#0a152d]/85 rounded-2xl border border-blue-900/40 overflow-x-auto scrollbar-none shadow-md shadow-blue-950/20">
                   {(['all', 'avatar_frames', 'entrance_effects', 'gifts', 'medals', 'mic_frames', 'chat_bubbles', 'room_themes'] as ProductCategory[]).map(
                     (cat) => {
                       const count = cat === 'all' ? products.length : products.filter((p) => p.category === cat).length;
@@ -804,7 +814,7 @@ export default function App() {
                         <button
                           key={cat}
                           onClick={() => handleCategoryChange(cat)}
-                          className={`px-3 py-1.5 text-xs font-semibold rounded-xl transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+                          className={`px-3.5 py-2 text-xs font-semibold rounded-xl transition-all whitespace-nowrap shrink-0 flex items-center gap-2 cursor-pointer ${
                             isActive
                               ? 'bg-amber-500/15 text-white font-bold border border-amber-500/40 shadow-xs'
                               : 'text-slate-300 hover:text-white hover:bg-white/[0.08] border border-transparent'

@@ -175,20 +175,17 @@ video,
   animation: backdropFadeIn 0.25s ease-out forwards;
 }
 
-/* Smooth Medium-Speed Page & Tab Transition (سرعة متوسطة وانتقال ناعم بين الصفحات) */
+/* Smooth Medium-Speed Page & Tab Transition without containing block side-effects */
 @keyframes pageTransitionIn {
   0% {
     opacity: 0;
-    transform: translateY(12px) scale(0.992);
   }
   100% {
     opacity: 1;
-    transform: translateY(0) scale(1);
   }
 }
 
 .animate-page-transition {
-  animation: pageTransitionIn 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
-  will-change: opacity, transform;
+  animation: pageTransitionIn 0.22s ease-out;
 }
 

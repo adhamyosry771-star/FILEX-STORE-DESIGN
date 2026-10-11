@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Plus,
   Pencil,
@@ -3498,443 +3499,447 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       )}
 
-      {/* ADD / EDIT PRODUCT MODAL FORM - NO DARK BACKDROP, RAISED, TRANSLUCENT GLASSMORPHIC */}
-      {isFormOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto sm:overflow-hidden bg-transparent flex items-start justify-center p-3 sm:p-4 pt-4 sm:pt-6 md:pt-8 animate-modal-pop">
-          {/* Transparent click-outside handler to dismiss without dimming the screen */}
-          <div className="fixed inset-0 bg-transparent -z-10" onClick={() => setIsFormOpen(false)} />
-          <div className="relative w-full max-w-[760px] bg-[#091326]/88 backdrop-blur-xl border border-white/15 shadow-[0_16px_50px_rgba(0,0,0,0.6)] rounded-2xl overflow-hidden flex flex-col">
-            
-            {/* Header - Seamless single uniform color with no dividing line */}
-            <div className="px-5 pt-4 pb-1.5 flex items-center justify-between">
-              <h3 className="text-xs sm:text-sm font-bold text-white flex items-center gap-2">
-                <Palette className="w-4 h-4 text-amber-400" />
-                <span>
-                  {editingProduct
-                    ? (lang === 'ar' ? `تعديل تصميم: ${editingProduct.code}` : `Edit: ${editingProduct.code}`)
-                    : (lang === 'ar' ? 'إضافة تصميم جديد' : 'Add New Design')}
-                </span>
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsFormOpen(false)}
-                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+      {/* ADD / EDIT PRODUCT MODAL FORM - TRANSLUCENT UNIFORM COLOR & SOFT BACKDROP VIA PORTAL */}
+      {isFormOpen &&
+        createPortal(
+          <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/35 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-modal-pop">
+            {/* Click-outside handler to dismiss */}
+            <div className="fixed inset-0 -z-10" onClick={() => setIsFormOpen(false)} />
+            <div className="relative w-full max-w-[760px] bg-[#091326]/85 backdrop-blur-xl border border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-2xl overflow-hidden flex flex-col my-auto">
+              
+              {/* Header - Seamless single uniform color with NO dividing line under title */}
+              <div className="px-5 pt-4 pb-1.5 flex items-center justify-between">
+                <h3 className="text-xs sm:text-sm font-bold text-white flex items-center gap-2">
+                  <Palette className="w-4 h-4 text-amber-400" />
+                  <span>
+                    {editingProduct
+                      ? (lang === 'ar' ? `تعديل تصميم: ${editingProduct.code}` : `Edit: ${editingProduct.code}`)
+                      : (lang === 'ar' ? 'إضافة تصميم جديد' : 'Add New Design')}
+                  </span>
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setIsFormOpen(false)}
+                  className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
 
-            {/* Form Fields - 2-Column Balanced Zero-Scroll Layout */}
-            <form onSubmit={handleSaveProduct} className="p-4 sm:p-5 text-xs">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
-                
-                {/* Column 1: Info & Pricing */}
-                <div className="space-y-2.5">
-                  {/* Row 1: Arabic Name & Code */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                        {lang === 'ar' ? 'اسم التصميم (عربي):' : 'Name (Arabic):'}
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={formName}
-                        onChange={(e) => setFormName(e.target.value)}
-                        placeholder="دخولية التنين الملكي"
-                        className="w-full bg-[#060c1a]/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400/80 focus:bg-[#060c1a]/60 text-xs transition-all"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                        {lang === 'ar' ? 'كود التصميم:' : 'Item Code:'}
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={formCode}
-                        onChange={(e) => setFormCode(e.target.value)}
-                        placeholder="FX-1029"
-                        className="w-full bg-[#060c1a]/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400/80 focus:bg-[#060c1a]/60 text-xs font-mono transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Row 2: English Name & Category */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                        {lang === 'ar' ? 'الاسم بالإنجليزية:' : 'Name (English):'}
-                      </label>
-                      <input
-                        type="text"
-                        value={formNameEn}
-                        onChange={(e) => setFormNameEn(e.target.value)}
-                        placeholder="Imperial Dragon"
-                        className="w-full bg-[#060c1a]/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400/80 focus:bg-[#060c1a]/60 text-xs transition-all"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                        {lang === 'ar' ? 'تصنيف المنتج:' : 'Category:'}
-                      </label>
-                      <select
-                        value={formCategory}
-                        onChange={(e) => setFormCategory(e.target.value as Exclude<ProductCategory, 'all'>)}
-                        className="w-full bg-[#060c1a]/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-amber-400/80 focus:bg-[#060c1a]/60 text-xs transition-all cursor-pointer"
-                      >
-                        <option value="avatar_frames" className="bg-[#091326] text-white">{lang === 'ar' ? 'الاطارات' : 'Avatar Frames'}</option>
-                        <option value="entrance_effects" className="bg-[#091326] text-white">{lang === 'ar' ? 'دخوليات' : 'Entrance'}</option>
-                        <option value="gifts" className="bg-[#091326] text-white">{lang === 'ar' ? 'هدايا' : 'Gifts'}</option>
-                        <option value="medals" className="bg-[#091326] text-white">{lang === 'ar' ? 'ميداليات' : 'Medals'}</option>
-                        <option value="mic_frames" className="bg-[#091326] text-white">{lang === 'ar' ? 'مؤثرات مايك' : 'Mic Waves'}</option>
-                        <option value="chat_bubbles" className="bg-[#091326] text-white">{lang === 'ar' ? 'فقاعات الدردشه' : 'Chat Bubbles'}</option>
-                        <option value="room_themes" className="bg-[#091326] text-white">{lang === 'ar' ? 'ثيمات الغرفه' : 'Room Themes'}</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Row 3: Price & Original Price */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                        {lang === 'ar' ? 'سعر البيع ($):' : 'Price ($):'}
-                      </label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        required
-                        value={formPrice}
-                        onChange={(e) => setFormPrice(Number(e.target.value))}
-                        className="w-full bg-[#060c1a]/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-amber-400/80 focus:bg-[#060c1a]/60 font-mono text-xs transition-all"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                        {lang === 'ar' ? 'السعر القديم ($):' : 'Original Price ($):'}
-                      </label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={formOriginalPrice || ''}
-                        onChange={(e) => setFormOriginalPrice(e.target.value ? Number(e.target.value) : 0)}
-                        placeholder="35.00"
-                        className="w-full bg-[#060c1a]/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400/80 focus:bg-[#060c1a]/60 font-mono text-xs transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Row 4: File Format & File Size */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                        {lang === 'ar' ? 'نوع الصيغة:' : 'File Format:'}
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={formFileFormat}
-                        onChange={(e) => setFormFileFormat(e.target.value)}
-                        placeholder="SVGA أو MP4"
-                        className="w-full bg-[#060c1a]/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400/80 focus:bg-[#060c1a]/60 font-mono text-xs transition-all"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                        {lang === 'ar' ? 'حجم الملف:' : 'File Size:'}
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={formFileSize}
-                        onChange={(e) => setFormFileSize(e.target.value)}
-                        placeholder="2.1 MB"
-                        className="w-full bg-[#060c1a]/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400/80 focus:bg-[#060c1a]/60 font-mono text-xs transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Description */}
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                      {lang === 'ar' ? 'الوصف:' : 'Description:'}
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={formDescription}
-                      onChange={(e) => setFormDescription(e.target.value)}
-                      placeholder={lang === 'ar' ? 'اكتب وصفاً للتصميم...' : 'Item description...'}
-                      className="w-full bg-[#060c1a]/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400/80 focus:bg-[#060c1a]/60 resize-none text-xs"
-                    />
-                  </div>
-                </div>
-
-                {/* Column 2: Media Assets & Submit Action */}
-                <div className="space-y-2.5 flex flex-col justify-between h-full">
-                  {/* Product Image Section: Compact Glass Box */}
-                  <div className="p-2.5 rounded-xl bg-[#060c1a]/40 border border-white/10 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <label className="text-slate-200 font-bold text-[11px] flex items-center gap-1.5">
-                        <ImageIcon className="w-3.5 h-3.5 text-amber-400" />
-                        <span>{lang === 'ar' ? 'صورة المعاينة للتصميم:' : 'Preview Image:'}</span>
-                      </label>
-                      <span className="text-[9px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/30">
-                        {lang === 'ar' ? 'رفع أو رابط' : 'Upload or URL'}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-1.5">
-                      <input
-                        type="file"
-                        ref={productFileInputRef}
-                        onChange={handleProductImageFile}
-                        accept="image/*"
-                        className="hidden"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => productFileInputRef.current?.click()}
-                        disabled={isUploadingProductImg}
-                        className="px-2.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer shrink-0"
-                      >
-                        <Upload className="w-3 h-3" />
-                        <span>
-                          {isUploadingProductImg
-                            ? (lang === 'ar' ? 'معالجة...' : 'Loading...')
-                            : (lang === 'ar' ? 'رفع ملف' : 'Upload')}
-                        </span>
-                      </button>
-
-                      <div className="relative flex-1">
+              {/* Form Fields - 2-Column Balanced Zero-Scroll Layout with Uniform Translucent Tone */}
+              <form onSubmit={handleSaveProduct} className="p-4 sm:p-5 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
+                  
+                  {/* Column 1: Info & Pricing */}
+                  <div className="space-y-2.5">
+                    {/* Row 1: Arabic Name & Code */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                          {lang === 'ar' ? 'اسم التصميم (عربي):' : 'Name (Arabic):'}
+                        </label>
                         <input
                           type="text"
                           required
-                          value={formPreviewImage}
-                          onChange={(e) => setFormPreviewImage(e.target.value)}
-                          placeholder={lang === 'ar' ? 'رابط الصورة...' : 'Image URL...'}
-                          className="w-full bg-[#060c1a]/60 border border-white/10 rounded-lg px-2.5 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400/80 font-mono text-[11px]"
+                          value={formName}
+                          onChange={(e) => setFormName(e.target.value)}
+                          placeholder="دخولية التنين الملكي"
+                          className="w-full bg-[#060c1a]/50 border border-white/10 rounded-lg px-2.5 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400/80 text-xs transition-all"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                          {lang === 'ar' ? 'كود التصميم:' : 'Item Code:'}
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={formCode}
+                          onChange={(e) => setFormCode(e.target.value)}
+                          placeholder="FX-1029"
+                          className="w-full bg-[#060c1a]/50 border border-white/10 rounded-lg px-2.5 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400/80 text-xs font-mono transition-all"
                         />
                       </div>
                     </div>
 
-                    {/* Live Preview Box */}
-                    {formPreviewImage.trim() && (
-                      <div className="flex items-center gap-2 p-1.5 bg-[#060c1a]/60 rounded-lg border border-white/10">
-                        <div className="w-10 h-10 rounded bg-black/60 overflow-hidden flex-shrink-0 border border-amber-500/30 p-0.5 flex items-center justify-center relative">
-                          <img
-                            src={formPreviewImage}
-                            alt="Preview"
-                            className="w-full h-full object-contain"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none';
-                              const next = e.currentTarget.nextElementSibling;
-                              if (next) (next as HTMLElement).style.display = 'flex';
-                            }}
-                          />
-                          <div
-                            style={{ display: 'none' }}
-                            className="w-full h-full flex flex-col items-center justify-center bg-red-950/40 text-amber-400 text-[8px] font-bold text-center"
-                          >
-                            <AlertCircle className="w-3 h-3 text-amber-400" />
-                          </div>
-                        </div>
-                        <div className="flex-1 min-w-0 text-[10px]">
-                          <span className="text-emerald-400 font-semibold block truncate">
-                            {formPreviewImage.startsWith('data:')
-                              ? (lang === 'ar' ? '✓ تم حفظ وتشفير الصورة' : '✓ Saved locally')
-                              : (lang === 'ar' ? '✓ رابط صورة مباشر' : '✓ Direct image URL')}
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setFormPreviewImage('')}
-                          className="text-red-400 hover:text-red-300 text-[10px] px-1.5 py-0.5 rounded bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 cursor-pointer"
-                        >
-                          {lang === 'ar' ? 'حذف' : 'Remove'}
-                        </button>
+                    {/* Row 2: English Name & Category */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                          {lang === 'ar' ? 'الاسم بالإنجليزية:' : 'Name (English):'}
+                        </label>
+                        <input
+                          type="text"
+                          value={formNameEn}
+                          onChange={(e) => setFormNameEn(e.target.value)}
+                          placeholder="Imperial Dragon"
+                          className="w-full bg-[#060c1a]/50 border border-white/10 rounded-lg px-2.5 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400/80 text-xs transition-all"
+                        />
                       </div>
-                    )}
-                  </div>
 
-                  {/* Preview Video URL Section: Compact Glass Box */}
-                  <div className="p-2.5 rounded-xl bg-[#060c1a]/40 border border-white/10 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className="text-slate-200 font-bold text-[11px] flex items-center gap-1.5">
-                        <Video className="w-3.5 h-3.5 text-amber-400" />
-                        <span>{lang === 'ar' ? 'رابط فيديو معاينة (اختياري):' : 'Video Preview (Optional):'}</span>
-                      </label>
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                          {lang === 'ar' ? 'تصنيف المنتج:' : 'Category:'}
+                        </label>
+                        <select
+                          value={formCategory}
+                          onChange={(e) => setFormCategory(e.target.value as Exclude<ProductCategory, 'all'>)}
+                          className="w-full bg-[#060c1a]/50 border border-white/10 rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-amber-400/80 text-xs transition-all cursor-pointer"
+                        >
+                          <option value="avatar_frames" className="bg-[#091326] text-white">{lang === 'ar' ? 'الاطارات' : 'Avatar Frames'}</option>
+                          <option value="entrance_effects" className="bg-[#091326] text-white">{lang === 'ar' ? 'دخوليات' : 'Entrance'}</option>
+                          <option value="gifts" className="bg-[#091326] text-white">{lang === 'ar' ? 'هدايا' : 'Gifts'}</option>
+                          <option value="medals" className="bg-[#091326] text-white">{lang === 'ar' ? 'ميداليات' : 'Medals'}</option>
+                          <option value="mic_frames" className="bg-[#091326] text-white">{lang === 'ar' ? 'مؤثرات مايك' : 'Mic Waves'}</option>
+                          <option value="chat_bubbles" className="bg-[#091326] text-white">{lang === 'ar' ? 'فقاعات الدردشه' : 'Chat Bubbles'}</option>
+                          <option value="room_themes" className="bg-[#091326] text-white">{lang === 'ar' ? 'ثيمات الغرفه' : 'Room Themes'}</option>
+                        </select>
+                      </div>
                     </div>
 
-                    <div className="relative">
-                      <input
-                        type="url"
-                        value={formPreviewVideoUrl}
-                        onChange={(e) => setFormPreviewVideoUrl(e.target.value)}
-                        placeholder="https://example.com/preview.mp4"
-                        className="w-full bg-[#060c1a]/60 border border-white/10 rounded-lg px-2.5 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400/80 font-mono text-[11px]"
+                    {/* Row 3: Price & Original Price */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                          {lang === 'ar' ? 'سعر البيع ($):' : 'Price ($):'}
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          required
+                          value={formPrice}
+                          onChange={(e) => setFormPrice(Number(e.target.value))}
+                          className="w-full bg-[#060c1a]/50 border border-white/10 rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-amber-400/80 font-mono text-xs transition-all"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                          {lang === 'ar' ? 'السعر القديم ($):' : 'Original Price ($):'}
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={formOriginalPrice || ''}
+                          onChange={(e) => setFormOriginalPrice(e.target.value ? Number(e.target.value) : 0)}
+                          placeholder="35.00"
+                          className="w-full bg-[#060c1a]/50 border border-white/10 rounded-lg px-2.5 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400/80 font-mono text-xs transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Row 4: File Format & File Size */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                          {lang === 'ar' ? 'نوع الصيغة:' : 'File Format:'}
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={formFileFormat}
+                          onChange={(e) => setFormFileFormat(e.target.value)}
+                          placeholder="SVGA أو MP4"
+                          className="w-full bg-[#060c1a]/50 border border-white/10 rounded-lg px-2.5 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400/80 font-mono text-xs transition-all"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                          {lang === 'ar' ? 'حجم الملف:' : 'File Size:'}
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={formFileSize}
+                          onChange={(e) => setFormFileSize(e.target.value)}
+                          placeholder="2.1 MB"
+                          className="w-full bg-[#060c1a]/50 border border-white/10 rounded-lg px-2.5 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400/80 font-mono text-xs transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Description */}
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                        {lang === 'ar' ? 'الوصف:' : 'Description:'}
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={formDescription}
+                        onChange={(e) => setFormDescription(e.target.value)}
+                        placeholder={lang === 'ar' ? 'اكتب وصفاً للتصميم...' : 'Item description...'}
+                        className="w-full bg-[#060c1a]/50 border border-white/10 rounded-lg px-2.5 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400/80 resize-none text-xs"
                       />
                     </div>
-
-                    {/* Video Preview thumbnail */}
-                    {formPreviewVideoUrl.trim() && (
-                      <div className="p-1.5 bg-[#060c1a]/60 rounded-lg border border-amber-500/30 flex items-center justify-between">
-                        <span className="text-[10px] text-amber-300 flex items-center gap-1 truncate">
-                          <Video className="w-3 h-3 text-amber-400 shrink-0" />
-                          <span className="truncate">{formPreviewVideoUrl}</span>
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setFormPreviewVideoUrl('')}
-                          className="text-red-400 hover:text-red-300 text-[9px] px-1.5 py-0.5 rounded bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 cursor-pointer shrink-0"
-                        >
-                          {lang === 'ar' ? 'مسح' : 'Clear'}
-                        </button>
-                      </div>
-                    )}
                   </div>
 
-                  {/* Submit & Cancel Action Buttons - Placed at Bottom of Column 2 */}
-                  <div className="pt-2 flex items-center justify-end gap-2.5">
-                    <button
-                      type="button"
-                      onClick={() => setIsFormOpen(false)}
-                      className="px-4 py-2 rounded-xl text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-colors cursor-pointer text-xs font-semibold"
-                    >
-                      {lang === 'ar' ? 'إلغاء' : 'Cancel'}
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-5 py-2 rounded-xl text-amber-300 font-bold bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 transition-colors flex items-center gap-1.5 cursor-pointer text-xs"
-                    >
-                      <Save className="w-3.5 h-3.5 text-amber-400" />
-                      <span>{lang === 'ar' ? 'حفظ ونشر التصميم' : 'Save & Publish'}</span>
-                    </button>
+                  {/* Column 2: Media Assets & Submit Action */}
+                  <div className="space-y-2.5 flex flex-col justify-between h-full">
+                    {/* Product Image Section */}
+                    <div className="p-2.5 rounded-xl bg-[#060c1a]/50 border border-white/10 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-slate-200 font-bold text-[11px] flex items-center gap-1.5">
+                          <ImageIcon className="w-3.5 h-3.5 text-amber-400" />
+                          <span>{lang === 'ar' ? 'صورة المعاينة للتصميم:' : 'Preview Image:'}</span>
+                        </label>
+                        <span className="text-[9px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/30">
+                          {lang === 'ar' ? 'رفع أو رابط' : 'Upload or URL'}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="file"
+                          ref={productFileInputRef}
+                          onChange={handleProductImageFile}
+                          accept="image/*"
+                          className="hidden"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => productFileInputRef.current?.click()}
+                          disabled={isUploadingProductImg}
+                          className="px-2.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer shrink-0"
+                        >
+                          <Upload className="w-3 h-3" />
+                          <span>
+                            {isUploadingProductImg
+                              ? (lang === 'ar' ? 'معالجة...' : 'Loading...')
+                              : (lang === 'ar' ? 'رفع ملف' : 'Upload')}
+                          </span>
+                        </button>
+
+                        <div className="relative flex-1">
+                          <input
+                            type="text"
+                            required
+                            value={formPreviewImage}
+                            onChange={(e) => setFormPreviewImage(e.target.value)}
+                            placeholder={lang === 'ar' ? 'رابط الصورة...' : 'Image URL...'}
+                            className="w-full bg-[#060c1a]/60 border border-white/10 rounded-lg px-2.5 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400/80 font-mono text-[11px]"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Live Preview Box */}
+                      {formPreviewImage.trim() && (
+                        <div className="flex items-center gap-2 p-1.5 bg-[#060c1a]/60 rounded-lg border border-white/10">
+                          <div className="w-10 h-10 rounded bg-black/60 overflow-hidden flex-shrink-0 border border-amber-500/30 p-0.5 flex items-center justify-center relative">
+                            <img
+                              src={formPreviewImage}
+                              alt="Preview"
+                              className="w-full h-full object-contain"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                const next = e.currentTarget.nextElementSibling;
+                                if (next) (next as HTMLElement).style.display = 'flex';
+                              }}
+                            />
+                            <div
+                              style={{ display: 'none' }}
+                              className="w-full h-full flex flex-col items-center justify-center bg-red-950/40 text-amber-400 text-[8px] font-bold text-center"
+                            >
+                              <AlertCircle className="w-3 h-3 text-amber-400" />
+                            </div>
+                          </div>
+                          <div className="flex-1 min-w-0 text-[10px]">
+                            <span className="text-emerald-400 font-semibold block truncate">
+                              {formPreviewImage.startsWith('data:')
+                                ? (lang === 'ar' ? '✓ تم حفظ وتشفير الصورة' : '✓ Saved locally')
+                                : (lang === 'ar' ? '✓ رابط صورة مباشر' : '✓ Direct image URL')}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setFormPreviewImage('')}
+                            className="text-red-400 hover:text-red-300 text-[10px] px-1.5 py-0.5 rounded bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 cursor-pointer"
+                          >
+                            {lang === 'ar' ? 'حذف' : 'Remove'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Preview Video URL Section */}
+                    <div className="p-2.5 rounded-xl bg-[#060c1a]/50 border border-white/10 space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-slate-200 font-bold text-[11px] flex items-center gap-1.5">
+                          <Video className="w-3.5 h-3.5 text-amber-400" />
+                          <span>{lang === 'ar' ? 'رابط فيديو معاينة (اختياري):' : 'Video Preview (Optional):'}</span>
+                        </label>
+                      </div>
+
+                      <div className="relative">
+                        <input
+                          type="url"
+                          value={formPreviewVideoUrl}
+                          onChange={(e) => setFormPreviewVideoUrl(e.target.value)}
+                          placeholder="https://example.com/preview.mp4"
+                          className="w-full bg-[#060c1a]/60 border border-white/10 rounded-lg px-2.5 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400/80 font-mono text-[11px]"
+                        />
+                      </div>
+
+                      {/* Video Preview thumbnail */}
+                      {formPreviewVideoUrl.trim() && (
+                        <div className="p-1.5 bg-[#060c1a]/60 rounded-lg border border-amber-500/30 flex items-center justify-between">
+                          <span className="text-[10px] text-amber-300 flex items-center gap-1 truncate">
+                            <Video className="w-3 h-3 text-amber-400 shrink-0" />
+                            <span className="truncate">{formPreviewVideoUrl}</span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setFormPreviewVideoUrl('')}
+                            className="text-red-400 hover:text-red-300 text-[9px] px-1.5 py-0.5 rounded bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 cursor-pointer shrink-0"
+                          >
+                            {lang === 'ar' ? 'مسح' : 'Clear'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Submit & Cancel Action Buttons */}
+                    <div className="pt-2 flex items-center justify-end gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => setIsFormOpen(false)}
+                        className="px-4 py-2 rounded-xl text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-colors cursor-pointer text-xs font-semibold"
+                      >
+                        {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-5 py-2 rounded-xl text-amber-300 font-bold bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 transition-colors flex items-center gap-1.5 cursor-pointer text-xs"
+                      >
+                        <Save className="w-3.5 h-3.5 text-amber-400" />
+                        <span>{lang === 'ar' ? 'حفظ ونشر التصميم' : 'Save & Publish'}</span>
+                      </button>
+                    </div>
+
                   </div>
 
                 </div>
+              </form>
 
-              </div>
-            </form>
-
-          </div>
-        </div>
-      )}
+            </div>
+          </div>,
+          document.body
+        )}
 
       {/* ADMIN BAN USER MODAL DIALOG - Styled exactly like BanModal */}
-      {banTargetUser && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/55 backdrop-blur-xs flex items-center justify-center p-3.5 animate-backdrop-fade">
-          {/* Glass window card identical to BanModal */}
-          <div className="relative w-full max-w-[320px] sm:max-w-[340px] bg-[#091326]/75 backdrop-blur-md border border-white/10 rounded-2xl p-4 sm:p-4.5 shadow-2xl text-center space-y-3.5 animate-modal-pop">
-            
-            {/* Red Shield Icon at top */}
-            <div className="relative mx-auto w-10 h-10 rounded-xl bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-500 shadow-xs">
-              <ShieldAlert className="w-5 h-5 text-red-500" />
-            </div>
-
-            {/* Header Title */}
-            <div className="space-y-0.5 relative z-10">
-              <h2 className="text-base font-black text-white tracking-tight">
-                {lang === 'ar' ? 'حظر وتقييد المستخدم' : 'Restrict & Ban User'}
-              </h2>
-              <p className="text-[11px] text-slate-300 leading-snug">
-                {banTargetUser.displayName} <span className="font-mono text-slate-400">({banTargetUser.email})</span>
-              </p>
-            </div>
-
-            {/* Duration Options Card (Same medium balanced glass style) */}
-            <div className="p-2.5 rounded-xl bg-black/35 border border-white/10 text-right rtl:text-right ltr:text-left space-y-2 text-xs">
-              <div className="text-[11px] font-bold text-slate-300 mb-1 flex items-center justify-between">
-                <span>{lang === 'ar' ? 'حدد مدة الحظر والتقييد:' : 'Select Ban Duration:'}</span>
-                <span className="text-[10px] text-red-400 font-mono">طرد فوري</span>
+      {banTargetUser &&
+        createPortal(
+          <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/55 backdrop-blur-xs flex items-center justify-center p-3.5 animate-backdrop-fade">
+            {/* Glass window card identical to BanModal */}
+            <div className="relative w-full max-w-[320px] sm:max-w-[340px] bg-[#091326]/75 backdrop-blur-md border border-white/10 rounded-2xl p-4 sm:p-4.5 shadow-2xl text-center space-y-3.5 animate-modal-pop">
+              
+              {/* Red Shield Icon at top */}
+              <div className="relative mx-auto w-10 h-10 rounded-xl bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-500 shadow-xs">
+                <ShieldAlert className="w-5 h-5 text-red-500" />
               </div>
 
-              {/* The 4 main options: يوم، اسبوع، شهر، سنة */}
-              <div className="grid grid-cols-2 gap-1.5">
-                {/* يوم */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleQuickBan(banTargetUser, '1_day');
-                    setBanTargetUser(null);
-                  }}
-                  className="p-2 rounded-xl bg-white/[0.06] hover:bg-red-500/20 text-slate-200 hover:text-red-300 border border-white/10 hover:border-red-500/35 text-xs font-bold transition-all flex items-center justify-between cursor-pointer"
-                >
-                  <span>{lang === 'ar' ? 'يوم' : '1 Day'}</span>
-                  <span className="text-[10px] text-slate-400 font-mono">24h</span>
-                </button>
+              {/* Header Title */}
+              <div className="space-y-0.5 relative z-10">
+                <h2 className="text-base font-black text-white tracking-tight">
+                  {lang === 'ar' ? 'حظر وتقييد المستخدم' : 'Restrict & Ban User'}
+                </h2>
+                <p className="text-[11px] text-slate-300 leading-snug">
+                  {banTargetUser.displayName} <span className="font-mono text-slate-400">({banTargetUser.email})</span>
+                </p>
+              </div>
 
-                {/* اسبوع */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleQuickBan(banTargetUser, '1_week');
-                    setBanTargetUser(null);
-                  }}
-                  className="p-2 rounded-xl bg-white/[0.06] hover:bg-red-500/20 text-slate-200 hover:text-red-300 border border-white/10 hover:border-red-500/35 text-xs font-bold transition-all flex items-center justify-between cursor-pointer"
-                >
-                  <span>{lang === 'ar' ? 'اسبوع' : '1 Week'}</span>
-                  <span className="text-[10px] text-slate-400 font-mono">7d</span>
-                </button>
+              {/* Duration Options Card (Same medium balanced glass style) */}
+              <div className="p-2.5 rounded-xl bg-black/35 border border-white/10 text-right rtl:text-right ltr:text-left space-y-2 text-xs">
+                <div className="text-[11px] font-bold text-slate-300 mb-1 flex items-center justify-between">
+                  <span>{lang === 'ar' ? 'حدد مدة الحظر والتقييد:' : 'Select Ban Duration:'}</span>
+                  <span className="text-[10px] text-red-400 font-mono">طرد فوري</span>
+                </div>
 
-                {/* شهر */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleQuickBan(banTargetUser, '1_month');
-                    setBanTargetUser(null);
-                  }}
-                  className="p-2 rounded-xl bg-white/[0.06] hover:bg-red-500/20 text-slate-200 hover:text-red-300 border border-white/10 hover:border-red-500/35 text-xs font-bold transition-all flex items-center justify-between cursor-pointer"
-                >
-                  <span>{lang === 'ar' ? 'شهر' : '1 Month'}</span>
-                  <span className="text-[10px] text-slate-400 font-mono">30d</span>
-                </button>
+                {/* The 4 main options: يوم، اسبوع، شهر، سنة */}
+                <div className="grid grid-cols-2 gap-1.5">
+                  {/* يوم */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleQuickBan(banTargetUser, '1_day');
+                      setBanTargetUser(null);
+                    }}
+                    className="p-2 rounded-xl bg-white/[0.06] hover:bg-red-500/20 text-slate-200 hover:text-red-300 border border-white/10 hover:border-red-500/35 text-xs font-bold transition-all flex items-center justify-between cursor-pointer"
+                  >
+                    <span>{lang === 'ar' ? 'يوم' : '1 Day'}</span>
+                    <span className="text-[10px] text-slate-400 font-mono">24h</span>
+                  </button>
 
-                {/* سنة */}
+                  {/* اسبوع */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleQuickBan(banTargetUser, '1_week');
+                      setBanTargetUser(null);
+                    }}
+                    className="p-2 rounded-xl bg-white/[0.06] hover:bg-red-500/20 text-slate-200 hover:text-red-300 border border-white/10 hover:border-red-500/35 text-xs font-bold transition-all flex items-center justify-between cursor-pointer"
+                  >
+                    <span>{lang === 'ar' ? 'اسبوع' : '1 Week'}</span>
+                    <span className="text-[10px] text-slate-400 font-mono">7d</span>
+                  </button>
+
+                  {/* شهر */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleQuickBan(banTargetUser, '1_month');
+                      setBanTargetUser(null);
+                    }}
+                    className="p-2 rounded-xl bg-white/[0.06] hover:bg-red-500/20 text-slate-200 hover:text-red-300 border border-white/10 hover:border-red-500/35 text-xs font-bold transition-all flex items-center justify-between cursor-pointer"
+                  >
+                    <span>{lang === 'ar' ? 'شهر' : '1 Month'}</span>
+                    <span className="text-[10px] text-slate-400 font-mono">30d</span>
+                  </button>
+
+                  {/* سنة */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleQuickBan(banTargetUser, '1_year');
+                      setBanTargetUser(null);
+                    }}
+                    className="p-2 rounded-xl bg-white/[0.06] hover:bg-red-500/20 text-slate-200 hover:text-red-300 border border-white/10 hover:border-red-500/35 text-xs font-bold transition-all flex items-center justify-between cursor-pointer"
+                  >
+                    <span>{lang === 'ar' ? 'سنة' : '1 Year'}</span>
+                    <span className="text-[10px] text-slate-400 font-mono">365d</span>
+                  </button>
+                </div>
+
+                {/* حظر دائم */}
                 <button
                   type="button"
                   onClick={() => {
-                    handleQuickBan(banTargetUser, '1_year');
+                    handleQuickBan(banTargetUser, 'permanent');
                     setBanTargetUser(null);
                   }}
-                  className="p-2 rounded-xl bg-white/[0.06] hover:bg-red-500/20 text-slate-200 hover:text-red-300 border border-white/10 hover:border-red-500/35 text-xs font-bold transition-all flex items-center justify-between cursor-pointer"
+                  className="w-full py-2 px-3 rounded-xl bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/35 text-xs font-bold transition-all flex items-center justify-between cursor-pointer"
                 >
-                  <span>{lang === 'ar' ? 'سنة' : '1 Year'}</span>
-                  <span className="text-[10px] text-slate-400 font-mono">365d</span>
+                  <span>{lang === 'ar' ? 'حظر دائم' : 'Permanent Ban'}</span>
+                  <span className="text-[10px] text-red-400 font-mono">نهائي</span>
                 </button>
               </div>
 
-              {/* حظر دائم */}
-              <button
-                type="button"
-                onClick={() => {
-                  handleQuickBan(banTargetUser, 'permanent');
-                  setBanTargetUser(null);
-                }}
-                className="w-full py-2 px-3 rounded-xl bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/35 text-xs font-bold transition-all flex items-center justify-between cursor-pointer"
-              >
-                <span>{lang === 'ar' ? 'حظر دائم' : 'Permanent Ban'}</span>
-                <span className="text-[10px] text-red-400 font-mono">نهائي</span>
-              </button>
-            </div>
+              {/* Cancel Button */}
+              <div className="space-y-1.5 pt-0.5 relative z-10">
+                <button
+                  type="button"
+                  onClick={() => setBanTargetUser(null)}
+                  className="w-full py-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] border border-white/15 text-slate-300 hover:text-white font-semibold text-xs transition-all cursor-pointer"
+                >
+                  {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+                </button>
+              </div>
 
-            {/* Cancel Button */}
-            <div className="space-y-1.5 pt-0.5 relative z-10">
-              <button
-                type="button"
-                onClick={() => setBanTargetUser(null)}
-                className="w-full py-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] border border-white/15 text-slate-300 hover:text-white font-semibold text-xs transition-all cursor-pointer"
-              >
-                {lang === 'ar' ? 'إلغاء' : 'Cancel'}
-              </button>
             </div>
-
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
 
       {/* CREATE MODERATOR MODAL */}
       {isAddModOpen && (

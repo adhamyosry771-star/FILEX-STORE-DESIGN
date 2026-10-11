@@ -64,8 +64,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const IconComponent = getCategoryIcon(product.category);
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/75 flex items-center justify-center p-3 sm:p-6">
-      <div className="relative w-full max-w-3xl bg-[#091326]/85 border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+    <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#050b18]/45 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-backdrop-fade">
+      <div className="relative w-full max-w-3xl bg-[#091326]/85 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
         
         {/* Close Button */}
         <button

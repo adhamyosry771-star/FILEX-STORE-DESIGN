@@ -263,18 +263,14 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           )}
 
-          {/* Snow Effect Falling Toggle Button (Glass Tile) */}
+          {/* Snow Effect Falling Toggle Button (Transparent Glass Tile with 360 Spin) */}
           <button
             onClick={onToggleSnow || onOpenNotifications}
-            className={`relative p-2.5 rounded-xl transition-all duration-200 cursor-pointer flex items-center justify-center shrink-0 focus:outline-hidden backdrop-blur-xs shadow-none ${
-              isSnowing
-                ? 'text-cyan-300 bg-cyan-500/20 border border-cyan-400/40 hover:bg-cyan-500/30'
-                : 'text-slate-100 hover:text-white bg-white/[0.09] hover:bg-white/[0.18] border border-white/20 hover:border-white/40'
-            }`}
+            className="relative p-2.5 text-slate-100 hover:text-white bg-white/[0.09] hover:bg-white/[0.18] border border-white/20 hover:border-white/40 rounded-xl transition-all duration-200 cursor-pointer backdrop-blur-xs flex items-center justify-center shrink-0 focus:outline-hidden shadow-none"
             aria-label={lang === 'ar' ? (isSnowing ? 'إيقاف تساقط الثلج' : 'تشغيل تساقط الثلج') : (isSnowing ? 'Stop Snow' : 'Let it Snow')}
             title={lang === 'ar' ? (isSnowing ? 'إيقاف تساقط الثلج ❄️' : 'تشغيل تساقط الثلج ❄️') : (isSnowing ? 'Stop Snow ❄️' : 'Let it Snow ❄️')}
           >
-            <Snowflake className={`w-4 h-4 transition-transform duration-500 ease-in-out ${isSnowing ? 'text-cyan-300 rotate-180' : 'rotate-0'}`} />
+            <Snowflake className={`w-4 h-4 text-slate-100 ${isSnowing ? 'animate-[spin_3.5s_linear_infinite]' : 'transition-transform duration-500'}`} />
           </button>
 
           {/* My Orders / Order History Button (Glass Tile - identical transparency to Cart and Notifications) */}
@@ -310,14 +306,14 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       </div>
 
-      {/* Mobile Category Bar (Glass pills directly on background - fully visible without scrollbar) */}
-      <div className="md:hidden bg-transparent px-2.5 py-2 flex flex-wrap items-center justify-center gap-1.5 text-xs">
+      {/* Mobile Category Bar (Glass pills directly on background) */}
+      <div className="md:hidden bg-transparent px-3 py-2.5 overflow-x-auto flex items-center gap-2 text-xs scrollbar-none">
         <button
           onClick={() => {
             if (isAdminOpen) onToggleAdmin();
             onSelectCategory('all');
           }}
-          className={`px-2.5 py-1 rounded-lg whitespace-nowrap transition-all ${
+          className={`px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 transition-all ${
             activeCategory === 'all' && !isAdminOpen
               ? 'bg-amber-500/15 text-white font-bold border border-amber-500/35 shadow-xs backdrop-blur-xs'
               : 'bg-white/[0.08] text-slate-200 hover:text-white hover:bg-white/[0.15] border border-white/15'

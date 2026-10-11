@@ -13,7 +13,7 @@ interface FooterProps {
 
 export const Footer: React.FC<FooterProps> = ({ lang, logoIconUrl, supportPhone }) => {
   return (
-    <footer className="border-t border-blue-900/30 bg-transparent text-slate-400 text-xs mt-16">
+    <footer className="border-none bg-transparent text-slate-400 text-xs mt-16">
       {/* Main Footer Links & Wordmark */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
         
