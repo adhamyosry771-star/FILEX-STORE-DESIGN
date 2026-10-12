@@ -127,21 +127,11 @@ export default function App() {
     secureSetItem('filex_site_branding_v1', branding);
   }, [branding]);
 
-  // Apply background dynamically to document.body
+  // Ensure body background is consistent dark color without buggy body scroll attachment
   useEffect(() => {
-    const bg = branding.backgroundImageUrl?.trim() || DEFAULT_BRANDING.backgroundImageUrl;
-    if (isVideoUrl(bg) || isYouTubeUrl(bg)) {
-      document.body.style.backgroundImage = 'none';
-      document.body.style.backgroundColor = '#07090e';
-    } else {
-      document.body.style.backgroundColor = '#07090e';
-      document.body.style.backgroundImage = `linear-gradient(to bottom, rgba(7, 9, 14, 0.45), rgba(7, 9, 14, 0.58), rgba(7, 9, 14, 0.70)), url('${bg}')`;
-      document.body.style.backgroundSize = 'cover';
-      document.body.style.backgroundPosition = 'center top';
-      document.body.style.backgroundAttachment = 'fixed';
-      document.body.style.backgroundRepeat = 'no-repeat';
-    }
-  }, [branding.backgroundImageUrl]);
+    document.body.style.backgroundColor = '#07090e';
+    document.body.style.backgroundImage = 'none';
+  }, []);
 
   // Apply favicon dynamically
   useEffect(() => {
@@ -326,6 +316,17 @@ export default function App() {
       }
     };
 
+    const handleUnbanEvent = (e: any) => {
+      const detail = e.detail;
+      if (!detail) return;
+      if (
+        (detail.email && detail.email.toLowerCase() === currentUser.email.toLowerCase()) ||
+        (detail.userId && detail.userId === currentUser.id)
+      ) {
+        setBannedModalInfo(null);
+      }
+    };
+
     // 3. Storage event listener (across browser tabs)
     const handleStorage = (e: StorageEvent) => {
       if (e.key === 'filex_active_ban_event' && e.newValue) {
@@ -341,10 +342,21 @@ export default function App() {
             setCurrentUser(null);
           }
         } catch {}
+      } else if (e.key === 'filex_active_unban_event' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (
+            (parsed.email && parsed.email.toLowerCase() === currentUser.email.toLowerCase()) ||
+            (parsed.userId && parsed.userId === currentUser.id)
+          ) {
+            setBannedModalInfo(null);
+          }
+        } catch {}
       }
     };
 
     window.addEventListener('filex_user_banned', handleBanEvent);
+    window.addEventListener('filex_user_unbanned', handleUnbanEvent);
     window.addEventListener('storage', handleStorage);
 
     // 4. Firestore real-time listener if available
@@ -357,6 +369,12 @@ export default function App() {
               const data = snap.data();
               const status = checkUserBanStatus(data as any);
               if (status.banned) {
+                // Verify not unbanned
+                const rawUnbanned = localStorage.getItem('filex_unbanned_emails_v1');
+                if (rawUnbanned) {
+                  const unbannedSet = JSON.parse(rawUnbanned);
+                  if (unbannedSet[currentUser.email.toLowerCase()]) return;
+                }
                 setBannedModalInfo(status);
                 logoutUser();
                 setCurrentUser(null);
@@ -367,9 +385,15 @@ export default function App() {
       });
     } catch {}
 
-    // 5. Periodic local heartbeat check (every 2.5 seconds)
+    // 5. Periodic local heartbeat check
     const heartbeat = setInterval(() => {
       try {
+        const rawUnbanned = localStorage.getItem('filex_unbanned_emails_v1');
+        if (rawUnbanned) {
+          const unbannedSet = JSON.parse(rawUnbanned);
+          if (unbannedSet[currentUser.email.toLowerCase()]) return;
+        }
+
         const raw = localStorage.getItem('filex_registered_users_v1');
         if (raw) {
           const users = JSON.parse(raw);
@@ -384,10 +408,11 @@ export default function App() {
           }
         }
       } catch {}
-    }, 2500);
+    }, 4000);
 
     return () => {
       window.removeEventListener('filex_user_banned', handleBanEvent);
+      window.removeEventListener('filex_user_unbanned', handleUnbanEvent);
       window.removeEventListener('storage', handleStorage);
       unsubFirestore();
       clearInterval(heartbeat);
@@ -640,7 +665,7 @@ export default function App() {
   return (
     <div className="min-h-screen text-slate-100 flex flex-col font-sans pb-16 md:pb-0 relative overflow-x-hidden">
       {/* Dynamic Animated Storefront Background (Video / YouTube / Image) */}
-      <div className="fixed inset-0 w-full h-full -z-20 overflow-hidden pointer-events-none select-none">
+      <div className="fixed inset-0 w-full h-full z-0 overflow-hidden pointer-events-none select-none">
         {isSiteBgYouTube ? (
           <iframe
             key={siteBg}
@@ -667,7 +692,7 @@ export default function App() {
           />
         ) : (
           <div
-            className="w-full h-full bg-cover bg-center bg-fixed bg-no-repeat"
+            className="w-full h-full bg-cover bg-center bg-no-repeat"
             style={{
               backgroundImage: `linear-gradient(to bottom, rgba(7, 9, 14, 0.45), rgba(7, 9, 14, 0.58), rgba(7, 9, 14, 0.70)), url('${siteBg}')`,
             }}
@@ -676,6 +701,9 @@ export default function App() {
         {/* Cinematic dark overlay to keep all text, products, and controls crisp & legible */}
         <div className="absolute inset-0 bg-gradient-to-b from-[#0a1226]/40 via-[#0b162e]/55 to-[#091124]/75 pointer-events-none" />
       </div>
+
+      {/* Main Page Content Layer */}
+      <div className="relative z-10 flex-1 flex flex-col">
       
       {/* Full-screen Falling Snow Effect */}
       <SnowEffect isActive={isSnowing} />
@@ -904,6 +932,7 @@ export default function App() {
         logoIconUrl={branding.logoIconUrl}
         supportPhone={branding.supportPhone}
       />
+      </div>
 
       {/* Mobile Bottom Quick Navigation Bar in Royal Dark Blue */}
       <div className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[#091326]/95 border-t border-blue-900/40 px-3 py-2 flex items-center justify-around text-[10px] text-slate-300 backdrop-blur-md">

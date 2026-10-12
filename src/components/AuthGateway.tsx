@@ -41,59 +41,22 @@ export const AuthGateway: React.FC<AuthGatewayProps> = ({
   const [errorMessage, setErrorMessage] = useState('');
   const [banModalStatus, setBanModalStatus] = useState<BanStatus | null>(null);
 
-  // Preload users in background to keep banned cache fresh for 0ms ban checks
+  // Preload users in background to keep data fresh
   useEffect(() => {
     getAllRegisteredUsers().catch(() => {});
+
+    const handleUnbanEvent = () => {
+      setBanModalStatus(null);
+      setErrorMessage('');
+    };
+    window.addEventListener('filex_user_unbanned', handleUnbanEvent);
+    return () => window.removeEventListener('filex_user_unbanned', handleUnbanEvent);
   }, []);
 
   // Handle Form Submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
-
-    // Instant Zero-Delay Ban Check for Login (0ms response)
-    if (mode === 'login') {
-      const cleanEmail = email.trim().toLowerCase();
-      try {
-        // 1. Direct check in banned map
-        const rawBanned = localStorage.getItem('filex_banned_emails_v1');
-        if (rawBanned) {
-          const bannedMap = JSON.parse(rawBanned);
-          const bannedRecord = bannedMap[cleanEmail];
-          if (bannedRecord) {
-            const status = checkUserBanStatus(bannedRecord);
-            if (status.banned) {
-              setBanModalStatus(status);
-              setErrorMessage(
-                lang === 'ar'
-                  ? 'لا يمكنك الدخول، تم تقييد هذا الحساب من قبل الإدارة.'
-                  : 'Access restricted, your account has been suspended.'
-              );
-              return;
-            }
-          }
-        }
-
-        // 2. Direct check in registered users list
-        const raw = localStorage.getItem('filex_registered_users_v1');
-        if (raw) {
-          const allUsers = JSON.parse(raw);
-          const userRecord = allUsers[cleanEmail];
-          if (userRecord && userRecord.role !== 'admin') {
-            const status = checkUserBanStatus(userRecord);
-            if (status.banned) {
-              setBanModalStatus(status);
-              setErrorMessage(
-                lang === 'ar'
-                  ? 'لا يمكنك الدخول، تم تقييد هذا الحساب من قبل الإدارة.'
-                  : 'Access restricted, your account has been suspended.'
-              );
-              return;
-            }
-          }
-        }
-      } catch {}
-    }
 
     // Anti-Brute-Force & Rate Limiting Defense
     const rateCheck = checkRateLimit(`auth_${mode}`);
@@ -184,7 +147,7 @@ export const AuthGateway: React.FC<AuthGatewayProps> = ({
         />
       ) : (
         <div
-          className="fixed inset-0 w-full h-full bg-cover bg-center bg-fixed bg-no-repeat z-0 pointer-events-none"
+          className="fixed inset-0 w-full h-full bg-cover bg-center bg-no-repeat z-0 pointer-events-none"
           style={{
             backgroundImage: `url('${bgSource}')`,
           }}

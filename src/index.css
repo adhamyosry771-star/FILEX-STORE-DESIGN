@@ -8,11 +8,6 @@ body {
   zoom: 0.9;
   font-family: 'Cairo', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   background-color: #07090e;
-  background-image: linear-gradient(to bottom, rgba(7, 9, 14, 0.45), rgba(7, 9, 14, 0.58), rgba(7, 9, 14, 0.70)), url('https://files.catbox.moe/i9b55z.jpg');
-  background-size: cover;
-  background-position: center top;
-  background-attachment: fixed;
-  background-repeat: no-repeat;
   min-height: 100vh;
   font-feature-settings: "lnum" 1, "tnum" 1;
   font-variant-numeric: lining-nums tabular-nums;

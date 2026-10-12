@@ -183,31 +183,83 @@ export async function loginUser(emailInput: string, passwordInput: string): Prom
     return adminUser;
   }
 
-  // 1.5. Instant Zero-Delay Ban Check (Prior to any network roundtrip)
+  // 1.5. Real-time Ban & Unban Verification (Checks database and unban events first)
+  let isExplicitlyUnbanned = false;
   try {
-    const rawBanned = localStorage.getItem('filex_banned_emails_v1');
-    if (rawBanned) {
-      const bannedMap = JSON.parse(rawBanned);
-      const bannedRecord = bannedMap[email];
-      if (bannedRecord) {
-        const banStatus = checkUserBanStatus(bannedRecord);
-        if (banStatus.banned) {
-          logStoreActivity('banned_user_login_blocked_instant', { email, banStatus });
-          throw new AccountBannedError(banStatus);
+    const rawUnbanned = localStorage.getItem('filex_unbanned_emails_v1');
+    if (rawUnbanned) {
+      const unbannedSet = JSON.parse(rawUnbanned);
+      isExplicitlyUnbanned = Boolean(unbannedSet[email]);
+    }
+  } catch {}
+
+  let isFirestoreUnbanned = false;
+  let firestoreBanStatus: BanStatus | null = null;
+  try {
+    const banDocSnap = await getDoc(doc(db, 'user_bans', email));
+    if (banDocSnap.exists()) {
+      const banDocData = banDocSnap.data();
+      if (banDocData.isBanned === false) {
+        isFirestoreUnbanned = true;
+      } else if (banDocData.isBanned === true) {
+        firestoreBanStatus = checkUserBanStatus(banDocData);
+        if (!firestoreBanStatus.banned) {
+          // Temporary ban already expired
+          isFirestoreUnbanned = true;
         }
       }
     }
-  } catch (e) {
-    if (e instanceof AccountBannedError) throw e;
-  }
+  } catch {}
 
-  const localUsers = getLocalUsers();
-  const existingLocal = localUsers[email];
-  if (existingLocal && existingLocal.role !== 'admin') {
-    const localBanStatus = checkUserBanStatus(existingLocal);
-    if (localBanStatus.banned) {
-      logStoreActivity('banned_user_login_blocked_instant', { email, banStatus: localBanStatus });
-      throw new AccountBannedError(localBanStatus);
+  // If unbanned either in Firestore user_bans or unban registry, clear any stale local cache immediately
+  if (isFirestoreUnbanned || isExplicitlyUnbanned) {
+    try {
+      const rawBanned = localStorage.getItem('filex_banned_emails_v1');
+      if (rawBanned) {
+        const bMap = JSON.parse(rawBanned);
+        delete bMap[email];
+        localStorage.setItem('filex_banned_emails_v1', JSON.stringify(bMap));
+      }
+      const localUsers = getLocalUsers();
+      if (localUsers[email]) {
+        localUsers[email].isBanned = false;
+        delete localUsers[email].bannedUntil;
+        delete localUsers[email].banDurationType;
+        delete localUsers[email].banReason;
+        delete localUsers[email].bannedAt;
+        saveLocalUsers(localUsers);
+      }
+    } catch {}
+  } else if (firestoreBanStatus && firestoreBanStatus.banned) {
+    logStoreActivity('banned_user_login_blocked_firestore', { email, banStatus: firestoreBanStatus });
+    throw new AccountBannedError(firestoreBanStatus);
+  } else {
+    // Only verify local storage ban if user was NOT explicitly unbanned
+    try {
+      const rawBanned = localStorage.getItem('filex_banned_emails_v1');
+      if (rawBanned) {
+        const bannedMap = JSON.parse(rawBanned);
+        const bannedRecord = bannedMap[email];
+        if (bannedRecord) {
+          const banStatus = checkUserBanStatus(bannedRecord);
+          if (banStatus.banned) {
+            logStoreActivity('banned_user_login_blocked_instant', { email, banStatus });
+            throw new AccountBannedError(banStatus);
+          }
+        }
+      }
+    } catch (e) {
+      if (e instanceof AccountBannedError) throw e;
+    }
+
+    const localUsers = getLocalUsers();
+    const existingLocal = localUsers[email];
+    if (existingLocal && existingLocal.role !== 'admin') {
+      const localBanStatus = checkUserBanStatus(existingLocal);
+      if (localBanStatus.banned) {
+        logStoreActivity('banned_user_login_blocked_instant', { email, banStatus: localBanStatus });
+        throw new AccountBannedError(localBanStatus);
+      }
     }
   }
 
@@ -297,6 +349,13 @@ export async function loginUser(emailInput: string, passwordInput: string): Prom
 
     // Check if banned
     if (role !== 'admin') {
+      if (isFirestoreUnbanned || isExplicitlyUnbanned) {
+        isBanned = false;
+        bannedUntil = null;
+        banDurationType = undefined;
+        banReason = undefined;
+        bannedAt = undefined;
+      }
       const banStatus = checkUserBanStatus({ isBanned, bannedUntil, banReason });
       if (banStatus.banned) {
         logStoreActivity('banned_user_login_blocked', { email, banStatus });
@@ -337,6 +396,16 @@ export async function loginUser(emailInput: string, passwordInput: string): Prom
 
     if (existing) {
       if (existing.passwordHash === password) {
+        // If unbanned via Firestore user_bans or unban registry, ensure local ban is completely erased
+        if (isFirestoreUnbanned || isExplicitlyUnbanned) {
+          existing.isBanned = false;
+          delete existing.bannedUntil;
+          delete existing.banDurationType;
+          delete existing.banReason;
+          delete existing.bannedAt;
+          saveLocalUsers(localUsers);
+        }
+
         // Check if banned locally
         if (existing.role !== 'admin') {
           const banStatus = checkUserBanStatus(existing);
@@ -640,8 +709,24 @@ export async function banUser(
 
   // 2. Update Firestore across all documents matching this userId or email
   try {
+    // Dedicated user_bans document for 100% reliable 1-read checks
+    await setDoc(doc(db, 'user_bans', lowerEmail), {
+      ...banData,
+      email: lowerEmail,
+      userId
+    }, { merge: true }).catch(() => {});
+
     if (userId) {
       await setDoc(doc(db, 'users', userId), banData, { merge: true }).catch(() => {});
+      try {
+        const uDoc = await getDoc(doc(db, 'users', userId));
+        if (uDoc.exists()) {
+          const fUid = uDoc.data()?.firebaseUid;
+          if (fUid && fUid !== userId) {
+            await setDoc(doc(db, 'users', fUid), banData, { merge: true }).catch(() => {});
+          }
+        }
+      } catch {}
     }
     const { collection, getDocs } = await import('firebase/firestore');
     const snap = await getDocs(collection(db, 'users'));
@@ -723,13 +808,37 @@ export async function unbanUser(userId: string, email: string): Promise<void> {
       bannedUntil: null,
       banDurationType: null,
       banReason: null,
-      bannedAt: null
+      bannedAt: null,
+      unbannedAt: new Date().toISOString()
     };
 
+    // A. Direct write to user_bans collection
+    await setDoc(doc(db, 'user_bans', lowerEmail), {
+      isBanned: false,
+      bannedUntil: null,
+      banDurationType: null,
+      banReason: null,
+      bannedAt: null,
+      unbannedAt: new Date().toISOString(),
+      userId,
+      email: lowerEmail
+    }, { merge: true }).catch(() => {});
+
+    // B. Direct write to userId and firebaseUid
     if (userId) {
       await setDoc(doc(db, 'users', userId), unbanPayload, { merge: true }).catch(() => {});
+      try {
+        const uDoc = await getDoc(doc(db, 'users', userId));
+        if (uDoc.exists()) {
+          const fUid = uDoc.data()?.firebaseUid;
+          if (fUid && fUid !== userId) {
+            await setDoc(doc(db, 'users', fUid), unbanPayload, { merge: true }).catch(() => {});
+          }
+        }
+      } catch {}
     }
 
+    // C. Update all documents in users collection
     const { collection, getDocs } = await import('firebase/firestore');
     const snap = await getDocs(collection(db, 'users'));
     for (const d of snap.docs) {
@@ -820,6 +929,15 @@ export async function getAllRegisteredUsers(): Promise<AuthUser[]> {
 
   // 3. Add Firestore users if available
   try {
+    let userBansMap: Record<string, any> = {};
+    try {
+      const { collection: col, getDocs: gDocs } = await import('firebase/firestore');
+      const bansSnap = await gDocs(col(db, 'user_bans'));
+      bansSnap.forEach((bDoc) => {
+        userBansMap[bDoc.id.toLowerCase()] = bDoc.data();
+      });
+    } catch {}
+
     const { collection, getDocs } = await import('firebase/firestore');
     const snap = await getDocs(collection(db, 'users'));
     snap.forEach((d) => {
@@ -845,13 +963,44 @@ export async function getAllRegisteredUsers(): Promise<AuthUser[]> {
           }
         } catch {}
 
-        let resolvedIsBanned: boolean;
-        if (isExplicitlyUnbanned || data.isBanned === false) {
+        const dedicatedBan = userBansMap[lowerEmail];
+        let resolvedIsBanned = false;
+        let resolvedBannedUntil = undefined;
+        let resolvedBanDurationType = undefined;
+        let resolvedBanReason = undefined;
+        let resolvedBannedAt = undefined;
+
+        if (isExplicitlyUnbanned || dedicatedBan?.isBanned === false || data.isBanned === false) {
           resolvedIsBanned = false;
+        } else if (dedicatedBan?.isBanned === true) {
+          resolvedIsBanned = true;
+          resolvedBannedUntil = dedicatedBan.bannedUntil;
+          resolvedBanDurationType = dedicatedBan.banDurationType;
+          resolvedBanReason = dedicatedBan.banReason;
+          resolvedBannedAt = dedicatedBan.bannedAt;
         } else if (data.isBanned === true) {
           resolvedIsBanned = true;
+          resolvedBannedUntil = data.bannedUntil;
+          resolvedBanDurationType = data.banDurationType;
+          resolvedBanReason = data.banReason;
+          resolvedBannedAt = data.bannedAt;
         } else {
           resolvedIsBanned = !!usersMap[lowerEmail]?.isBanned;
+          resolvedBannedUntil = usersMap[lowerEmail]?.bannedUntil;
+          resolvedBanDurationType = usersMap[lowerEmail]?.banDurationType;
+          resolvedBanReason = usersMap[lowerEmail]?.banReason;
+          resolvedBannedAt = usersMap[lowerEmail]?.bannedAt;
+        }
+
+        // Auto expire if temporary ban has passed
+        if (resolvedIsBanned && resolvedBannedUntil) {
+          if (new Date(resolvedBannedUntil).getTime() <= Date.now()) {
+            resolvedIsBanned = false;
+            resolvedBannedUntil = undefined;
+            resolvedBanDurationType = undefined;
+            resolvedBanReason = undefined;
+            resolvedBannedAt = undefined;
+          }
         }
 
         usersMap[lowerEmail] = {
@@ -863,10 +1012,10 @@ export async function getAllRegisteredUsers(): Promise<AuthUser[]> {
           createdAt: firestoreCreated,
           lastSeen: firestoreLastSeen,
           isBanned: resolvedIsBanned,
-          banDurationType: resolvedIsBanned ? (data.banDurationType || usersMap[lowerEmail]?.banDurationType) : undefined,
-          bannedUntil: resolvedIsBanned ? (data.bannedUntil !== undefined ? data.bannedUntil : usersMap[lowerEmail]?.bannedUntil) : undefined,
-          banReason: resolvedIsBanned ? (data.banReason || usersMap[lowerEmail]?.banReason) : undefined,
-          bannedAt: resolvedIsBanned ? (data.bannedAt || usersMap[lowerEmail]?.bannedAt) : undefined,
+          banDurationType: resolvedIsBanned ? resolvedBanDurationType : undefined,
+          bannedUntil: resolvedIsBanned ? resolvedBannedUntil : undefined,
+          banReason: resolvedIsBanned ? resolvedBanReason : undefined,
+          bannedAt: resolvedIsBanned ? resolvedBannedAt : undefined,
           isModerator: data.isModerator !== undefined ? data.isModerator : (usersMap[lowerEmail]?.isModerator || data.role === 'moderator'),
           moderatorPermissions: data.moderatorPermissions || usersMap[lowerEmail]?.moderatorPermissions || [],
           isModeratorRevoked: data.isModeratorRevoked !== undefined ? data.isModeratorRevoked : !!usersMap[lowerEmail]?.isModeratorRevoked
@@ -928,6 +1077,7 @@ export async function getAllRegisteredUsers(): Promise<AuthUser[]> {
   try {
     const rawBanned = localStorage.getItem('filex_banned_emails_v1');
     const bannedMap = rawBanned ? JSON.parse(rawBanned) : {};
+    let localCleaned = false;
     Object.values(usersMap).forEach((u) => {
       if (u.email) {
         const eml = u.email.toLowerCase();
@@ -943,10 +1093,21 @@ export async function getAllRegisteredUsers(): Promise<AuthUser[]> {
           };
         } else {
           delete bannedMap[eml];
+          if (localUsers[eml] && localUsers[eml].isBanned) {
+            localUsers[eml].isBanned = false;
+            delete localUsers[eml].bannedUntil;
+            delete localUsers[eml].banDurationType;
+            delete localUsers[eml].banReason;
+            delete localUsers[eml].bannedAt;
+            localCleaned = true;
+          }
         }
       }
     });
     localStorage.setItem('filex_banned_emails_v1', JSON.stringify(bannedMap));
+    if (localCleaned) {
+      saveLocalUsers(localUsers);
+    }
   } catch {}
 
   return Object.values(usersMap);
