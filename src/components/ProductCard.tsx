@@ -42,7 +42,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const IconComponent = getCategoryIcon(product.category);
 
   return (
-    <div className="group relative flex flex-col rounded-2xl bg-[#0c162d]/90 hover:bg-[#0f1b36] border border-blue-900/40 hover:border-amber-400/60 transition-all duration-300 shadow-md shadow-blue-950/20 overflow-hidden">
+    <div className="group relative flex flex-col rounded-2xl bg-[#0c162d]/90 border border-blue-900/40 hover:border-amber-400 transition-all duration-300 shadow-md shadow-blue-950/20 overflow-hidden">
       
       {/* Visual Container in matching unified background with subtle bottom border line */}
       <div
